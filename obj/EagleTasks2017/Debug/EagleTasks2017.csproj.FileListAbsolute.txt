@@ -1,0 +1,6 @@
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\EagleTasks2017\Debug\EagleTasks2017.csproj.CoreCompileInputs.cache
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\bin\Debug\bin\EagleTasks.dll
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\bin\Debug\bin\EagleTasks.pdb
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\EagleTasks2017\Debug\EagleTasks2017.csprojResolveAssemblyReference.cache
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\EagleTasks2017\Debug\EagleTasks.dll
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\EagleTasks2017\Debug\EagleTasks.pdb

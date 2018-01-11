@@ -1,0 +1,51 @@
+<!--
+ *
+ * Eagle.MonoDevelop.Settings.targets -
+ *
+ * WARNING: Contains more evil MSBuild hacks than your doctor recommended.
+ *
+ * Copyright (c) 2007-2012 by Joe Mistachkin.  All rights reserved.
+ *
+ * See the file "license.terms" for information on usage and redistribution of
+ * this file, and for a DISCLAIMER OF ALL WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ *
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+  ******************************************************************************
+  **                          Load Per-User Settings                          **
+  ******************************************************************************
+  -->
+
+  <!--
+      NOTE: If the per-user settings file exists, import it now.  The contained
+            settings, if any, will override the default ones provided below.
+  -->
+  <Import Condition="'$(MSBuildProjectDirectory)' != '' And
+                     !HasTrailingSlash('$(MSBuildProjectDirectory)') And
+                     Exists('$(MSBuildProjectDirectory)\Targets\Eagle.MonoDevelop.Settings.targets.user')"
+          Project="$(MSBuildProjectDirectory)\Targets\Eagle.MonoDevelop.Settings.targets.user" />
+
+  <!--
+  ******************************************************************************
+  **                          MonoDevelop Properties                          **
+  ******************************************************************************
+  -->
+
+  <PropertyGroup>
+    <!--
+        NOTE: Where is the MonoDevelop 2.6 binary directory in the default
+              install?
+    -->
+    <EagleMonoDevelop26Directory Condition="'$(EagleMonoDevelop26Directory)' == ''">$(ProgramFiles)\MonoDevelop</EagleMonoDevelop26Directory>
+
+    <!--
+        NOTE: Where is the MonoDevelop binary directory?  By default, this is an
+              empty string.  However, it can be manually overridden here if
+              necessary (e.g. MonoDevelop is installed in a custom location).
+    -->
+    <EagleMonoDevelopDirectory Condition="'$(EagleMonoDevelopDirectory)' == ''"></EagleMonoDevelopDirectory>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,6 @@
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\Plugin2017\Debug\Plugin2017.csproj.CoreCompileInputs.cache
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\bin\Debug\lib\Plugin1.0\Plugin.dll
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\bin\Debug\lib\Plugin1.0\Plugin.pdb
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\Plugin2017\Debug\Plugin2017.csprojResolveAssemblyReference.cache
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\Plugin2017\Debug\Plugin.dll
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\Plugin2017\Debug\Plugin.pdb

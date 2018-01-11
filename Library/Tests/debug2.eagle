@@ -1,0 +1,34 @@
+###############################################################################
+#
+# debug2.eagle --
+#
+# Extensible Adaptable Generalized Logic Engine (Eagle)
+#
+# Copyright (c) 2007-2012 by Joe Mistachkin.  All rights reserved.
+#
+# See the file "license.terms" for information on usage and redistribution of
+# this file, and for a DISCLAIMER OF ALL WARRANTIES.
+#
+# RCS: @(#) $Id: $
+#
+###############################################################################
+
+source [file join [file normalize [file dirname [info script]]] prologue.eagle]
+
+###############################################################################
+
+runTest {test debug-2.1 {isolated evaluation} -body {
+  set x 1
+  debug eval set x 2
+  debug eval incr x
+  list [set x] [debug eval set x]
+} -cleanup {
+  catch {debug eval unset -nocomplain x}
+  unset -nocomplain x
+} -constraints \
+{eagle compile.DEBUGGER scriptDebugger scriptDebuggerInterpreter} \
+-result {1 3}}
+
+###############################################################################
+
+source [file join [file normalize [file dirname [info script]]] epilogue.eagle]

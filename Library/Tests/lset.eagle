@@ -1,0 +1,34 @@
+###############################################################################
+#
+# lset.eagle --
+#
+# Extensible Adaptable Generalized Logic Engine (Eagle)
+#
+# Copyright (c) 2007-2012 by Joe Mistachkin.  All rights reserved.
+#
+# See the file "license.terms" for information on usage and redistribution of
+# this file, and for a DISCLAIMER OF ALL WARRANTIES.
+#
+# RCS: @(#) $Id: $
+#
+###############################################################################
+
+source [file join [file normalize [file dirname [info script]]] prologue.eagle]
+
+###############################################################################
+
+runTest {test lset-1.1 {simple lset} -setup {
+  set list [list a b c [list d e f [list g h i]]]
+} -body {
+  list [lset list end end end end 0 0000] [lset list end end end end 1111] \
+    [lset list end end end-2 2222] [lset list end end 3333] \
+    [lset list end 4444] [lset list 0 TEST]
+} -cleanup {
+  unset list
+} -result {{a b c {d e f {g h 0000}}} {a b c {d e f {g h 1111}}}\
+{a b c {d e f {2222 h 1111}}} {a b c {d e f 3333}} {a b c 4444}\
+{TEST b c 4444}}}
+
+###############################################################################
+
+source [file join [file normalize [file dirname [info script]]] epilogue.eagle]

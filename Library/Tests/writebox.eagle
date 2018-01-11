@@ -1,0 +1,115 @@
+###############################################################################
+#
+# writebox.eagle --
+#
+# Extensible Adaptable Generalized Logic Engine (Eagle)
+#
+# Copyright (c) 2007-2012 by Joe Mistachkin.  All rights reserved.
+#
+# See the file "license.terms" for information on usage and redistribution of
+# this file, and for a DISCLAIMER OF ALL WARRANTIES.
+#
+# RCS: @(#) $Id: $
+#
+###############################################################################
+
+source [file join [file normalize [file dirname [info script]]] prologue.eagle]
+
+###############################################################################
+#
+# NOTE: Most of the tests in this file are marked with the "interactive" test
+#       constraint.  However, the reasons why may not be immediately obvious.
+#       In theory, the tests themselves could run without any user present;
+#       however, there is no simple way to verify their output (i.e. boxes on
+#       screen containing the specified text) other than via visual inspection
+#       of the resulting output.  The "interactive" test constraint is used in
+#       an attempt to explicitly express this intent.
+#
+###############################################################################
+# MONO: These tests do not work with the console driver used by Mono on Unix;
+#       therefore, they are [currently] constrained to run only on Windows.
+###############################################################################
+
+runTest {test debug-5.1 {truncated information display} -setup {
+  set interp [object invoke Interpreter GetActive]
+  set x [object invoke -create -parametertypes String Result op_Implicit ""]
+} -body {
+  list [object invoke Eagle._Tests.Default TestWriteBox $interp \
+      [string repeat x [lindex [getHostSize] 0]] true false false x] \
+      [object invoke $x ToString] \
+      [object invoke Interpreter.GetActive.Host WriteLine]
+} -cleanup {
+  unset -nocomplain x interp
+} -constraints {eagle command.object windows compile.TEST interactive\
+Eagle._Tests.Default.TestWriteBox} -result {True {} True}}
+
+###############################################################################
+
+runTest {test debug-5.2 {basic single-line information display} -setup {
+  set interp [object invoke Interpreter GetActive]
+  set x [object invoke -create -parametertypes String Result op_Implicit ""]
+} -body {
+  list [object invoke Eagle._Tests.Default TestWriteBox $interp \
+      "this is a test." false false false x] [object invoke $x ToString] \
+      [object invoke Interpreter.GetActive.Host WriteLine]
+} -cleanup {
+  unset -nocomplain x interp
+} -constraints {eagle command.object windows compile.TEST interactive\
+Eagle._Tests.Default.TestWriteBox} -result {True {} True}}
+
+###############################################################################
+
+runTest {test debug-5.3 {basic single-line information display} -setup {
+  set interp [object invoke Interpreter GetActive]
+  set x [object invoke -create -parametertypes String Result op_Implicit ""]
+} -body {
+  list [object invoke Eagle._Tests.Default TestWriteBox $interp \
+      "this is a test." false true false x] [object invoke $x ToString] \
+      [object invoke Interpreter.GetActive.Host WriteLine]
+} -cleanup {
+  unset -nocomplain x interp
+} -constraints {eagle command.object windows compile.TEST interactive\
+Eagle._Tests.Default.TestWriteBox} -result {True {} True}}
+
+###############################################################################
+
+runTest {test debug-5.4 {basic multiple-line information display} -setup {
+  set interp [object invoke Interpreter GetActive]
+  set x [object invoke -create -parametertypes String Result op_Implicit ""]
+} -body {
+  list [object invoke Eagle._Tests.Default TestWriteBox $interp \
+      "this is a test." true false false x] [object invoke $x ToString] \
+      [object invoke Interpreter.GetActive.Host WriteLine]
+} -cleanup {
+  unset -nocomplain x interp
+} -constraints {eagle command.object windows compile.TEST interactive\
+Eagle._Tests.Default.TestWriteBox} -result {True {} True}}
+
+###############################################################################
+
+runTest {test debug-5.5 {basic multiple-line information display} -setup {
+  set interp [object invoke Interpreter GetActive]
+  set x [object invoke -create -parametertypes String Result op_Implicit ""]
+} -body {
+  list [object invoke Eagle._Tests.Default TestWriteBox $interp \
+      "this is a test." true true false x] [object invoke $x ToString] \
+      [object invoke Interpreter.GetActive.Host WriteLine]
+} -cleanup {
+  unset -nocomplain x interp
+} -constraints {eagle command.object windows compile.TEST interactive\
+Eagle._Tests.Default.TestWriteBox} -result {True {} True}}
+
+###############################################################################
+
+runTest {test debug-5.6 {[host writebox] argument count enforcement} -setup {
+  unset -nocomplain result
+} -body {
+  list [catch {host writebox "this is good." "this is bad."} result] $result
+} -cleanup {
+  unset -nocomplain result
+} -constraints {eagle} -result \
+{1 {wrong # args: should be "host writebox ?options? string"}}}
+
+###############################################################################
+
+source [file join [file normalize [file dirname [info script]]] epilogue.eagle]

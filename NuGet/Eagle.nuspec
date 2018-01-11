@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>Eagle</id>
+    <title>The Eagle Project</title>
+    <version>1.0.X.X</version>
+    <authors>Eagle Development Team</authors>
+    <description>An implementation of the Tcl scripting language.</description>
+    <language>en-US</language>
+    <projectUrl>https://eagle.to/</projectUrl>
+    <iconUrl>https://eagle.to/images/eagle128.png</iconUrl>
+    <licenseUrl>https://eagle.to/standard/license.html</licenseUrl>
+    <tags>automation console database dynamic extensibility functional integration interop interpreter mono msbuild parser plugin powershell reflection scripting sockets tcl/tk winforms wix wpf</tags>
+    <copyright>Copyright &#x00A9; 2007-2012 by Joe Mistachkin.  All rights reserved.</copyright>
+    <dependencies>
+      <group targetFramework="net20">
+        <dependency id="Eagle.CLRv2" version="1.0.X.X" />
+      </group>
+      <group targetFramework="net40">
+        <dependency id="Eagle.CLRv4" version="1.0.X.X" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files />
+</package>

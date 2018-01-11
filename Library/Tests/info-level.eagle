@@ -1,0 +1,518 @@
+###############################################################################
+#
+# info-level.eagle --
+#
+# Extensible Adaptable Generalized Logic Engine (Eagle)
+#
+# Copyright (c) 2007-2012 by Joe Mistachkin.  All rights reserved.
+#
+# See the file "license.terms" for information on usage and redistribution of
+# this file, and for a DISCLAIMER OF ALL WARRANTIES.
+#
+# RCS: @(#) $Id: $
+#
+###############################################################################
+
+source [file join [file normalize [file dirname [info script]]] prologue.eagle]
+
+###############################################################################
+
+runTest {test infoLevel-1.1 {info level} -setup {
+  proc foo { a b c } {
+    catch {bar [expr {$a + 1}] [expr {$b - 1}] [expr {$c * 2}]} error
+    return [list $error [info level [info level]] [info level 0]]
+  }
+
+  proc bar { a b c } {
+    catch {splog [expr {$a + 1}] [expr {$b - 1}] [expr {$c * 2}]} error
+    return [list $error [info level [info level]] [info level 0] \
+      [info level -1]]
+  }
+
+  proc splog { a b c } {
+    return [list [info level [info level]] [info level 0] [info level -1] \
+      [info level -2]]
+  }
+} -body {
+  foo 2 3 4
+} -cleanup {
+  rename splog ""
+  rename bar ""
+  rename foo ""
+} -result {{{{splog 4 1 16} {splog 4 1 16} {bar 3 2 8} {foo 2 3 4}}\
+{bar 3 2 8} {bar 3 2 8} {foo 2 3 4}} {foo 2 3 4} {foo 2 3 4}}}
+
+###############################################################################
+
+runTest {test infoVars-1.1 {info vars with global and local frames} -setup {
+  proc foo {} {
+    set ::fooVar "global var value #1"
+    set ::fooVar2 "global var value #2"
+
+    set fooVar3 "local var value #1"
+    set fooVar4 "local var value #2"
+
+    return [list [lsort [uplevel #0 [list info vars ::fooVar]]] \
+                 [lsort [uplevel #0 [list info vars fooVar]]] \
+                 [lsort [uplevel #0 [list info vars ::fooVar*]]] \
+                 [lsort [uplevel #0 [list info vars fooVar*]]] \
+                 [lsort [info vars ::fooVar]] \
+                 [lsort [info vars fooVar]] \
+                 [lsort [info vars ::fooVar*]] \
+                 [lsort [info vars fooVar*]]]
+  }
+} -body {
+  foo
+} -cleanup {
+  unset -nocomplain fooVar fooVar2
+
+  rename foo ""
+} -result {::fooVar fooVar {::fooVar ::fooVar2} {fooVar fooVar2} ::fooVar {}\
+{::fooVar ::fooVar2} {fooVar3 fooVar4}}}
+
+###############################################################################
+
+proc getAssemblyFileRootNameOnly {} {
+  if {[isEagle]} then {
+    return [file rootname [file tail [lindex [info assembly] end]]]
+  } else {
+    return Eagle; # NOTE: Not really used.
+  }
+}
+
+###############################################################################
+
+#
+# NOTE: This test will fail if the Eagle core library is not strong named
+#       signed somehow (i.e. either delay signed or real signed) with the
+#       official key.
+#
+runTest {test infoPlugin-1.1.1 {info plugin} -body {
+  info plugin [lindex [lindex [lsort [info loaded]] 0] 1]
+} -constraints {eagle windows strongName.official} -match regexp -result \
+[string map [list %assembly% [getTestAssemblyName] %assemblyFile% \
+[getAssemblyFileRootNameOnly]] {^kind Plugin id\
+[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\
+name \{Eagle\._Plugins\.Core, %assembly%, Version=1\.0\.\d+\.\d+,\
+Culture=neutral,\
+PublicKeyToken=(?:null|29c6297630be05eb|1e22ec67879739a2|358030063a832bc3)\}\
+version 1\.0\.\d+\.\d+ uri https://eagle\.to/ description \{\} assemblyName\
+\{%assembly%, Version=1\.0\.\d+\.\d+, Culture=neutral,\
+PublicKeyToken=(?:null|29c6297630be05eb|1e22ec67879739a2|358030063a832bc3)\}\
+fileName \{.*?\\%assemblyFile%\.(?:dll|exe)\} flags \{Primary, System, Host,\
+Debugger, Command, Function, Trace, Policy, Resolver, Static, (?:NativeCode,\
+)?MergeCommands, NoPolicies, NoTraces(?:, StrongName)?(?:, Verified)?(?:,\
+Authenticode)?(?:, Trusted)?\} options \{(?:[0-9A-Z_]+)(?: [0-9A-Z_]+)*\}$}]}
+
+###############################################################################
+
+#
+# NOTE: This test will fail if the Eagle core library is not strong named
+#       signed somehow (i.e. either delay signed or real signed) with the
+#       official key.
+#
+runTest {test infoPlugin-1.1.2 {info plugin} -body {
+  info plugin [lindex [lindex [lsort [info loaded]] 0] 1]
+} -constraints \
+[fixConstraints {eagle !windows strongName.official}] -match regexp -result \
+[string map [list %assembly% [getTestAssemblyName] %assemblyFile% \
+[getAssemblyFileRootNameOnly]] {^kind Plugin id\
+[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\
+name \{Eagle\._Plugins\.Core, %assembly%, Version=1\.0\.\d+\.\d+,\
+Culture=neutral,\
+PublicKeyToken=(?:null|29c6297630be05eb|1e22ec67879739a2|358030063a832bc3)\}\
+version 1\.0\.\d+\.\d+ uri https://eagle\.to/ description \{\} assemblyName\
+\{%assembly%, Version=1\.0\.\d+\.\d+, Culture=neutral,\
+PublicKeyToken=(?:null|29c6297630be05eb|1e22ec67879739a2|358030063a832bc3)\}\
+fileName .*?/%assemblyFile%\.(?:dll|exe) flags \{Primary, System, Host,\
+Debugger, Command, Function, Trace, Policy, Resolver, Static, (?:NativeCode,\
+)?MergeCommands, NoPolicies, NoTraces(?:, StrongName)?(?:, Verified)?(?:,\
+Authenticode)?(?:, Trusted)?\} options \{(?:[0-9A-Z_]+)(?: [0-9A-Z_]+)*\}$}]}
+
+###############################################################################
+
+rename getAssemblyFileRootNameOnly ""
+
+###############################################################################
+
+runTest {test infoBinary-1.1 {info binary, default} -body {
+  info binary
+} -constraints {eagle} -match regexp -result {^.+[/\\].+$}}
+
+###############################################################################
+
+runTest {test infoBinary-1.2 {info binary, isolated} -body {
+  info binary
+} -constraints {eagle compile.ISOLATED_INTERPRETERS} \
+-isolationLevel AppDomain -match regexp -result {^.+[/\\].+$}}
+
+###############################################################################
+
+runTest {test infoBinary-1.3 {info binary, shell, default} -body {
+  info binary
+} -constraints {eagle shell} -match regexp -result {^.+[/\\]bin$}}
+
+###############################################################################
+
+runTest {test infoBinary-1.4 {info binary, shell, isolated} -body {
+  info binary
+} -constraints {eagle shell compile.ISOLATED_INTERPRETERS} \
+-isolationLevel AppDomain -match regexp -result {^.+[/\\]bin$}}
+
+###############################################################################
+
+runTest {test infoNameOf-1.1 {info nameofexecutable, default} -body {
+  info nameofexecutable
+} -constraints {eagle} -match regexp -result {^.+[/\\].+\.exe$}}
+
+###############################################################################
+
+runTest {test infoNameOf-1.2 {info nameofexecutable, isolated} -body {
+  info nameofexecutable
+} -constraints {eagle dotNet compile.ISOLATED_INTERPRETERS} \
+-isolationLevel AppDomain -match regexp -result {^.+[/\\].+\.exe$}}
+
+###############################################################################
+
+runTest {test infoNameOf-1.3 {info nameofexecutable, shell, default} -body {
+  info nameofexecutable
+} -constraints {eagle shell.EagleShell} -match regexp -result \
+{^.+[/\\]EagleShell\.exe$}}
+
+###############################################################################
+
+runTest {test infoNameOf-1.4 {info nameofexecutable, shell, isolated} -body {
+  info nameofexecutable
+} -constraints {eagle dotNet shell.EagleShell compile.ISOLATED_INTERPRETERS} \
+-isolationLevel AppDomain -match regexp -result {^.+[/\\]EagleShell\.exe$}}
+
+###############################################################################
+
+runTest {test infoScript-1.1 {info script} -body {
+  source [file join $test_data_path script.eagle]
+} -constraints {file_script.eagle} -result {script.eagle}}
+
+###############################################################################
+
+runTest {test infoSource-1.1 {info source} -body {
+  #
+  # NOTE: This test does not yet pass due to limitations of the test suite
+  #       and the script engine with regard to precise token locations.
+  #
+  info source
+} -constraints {eagle knownBug} -result \
+[list [file nativename [file join $test_path info-level.eagle]] 177]}
+
+###############################################################################
+
+runTest {test infoWindows-1.1 {info windows (all)} -body {
+  set windows [info windows]
+
+  foreach window $windows {
+    if {![string is wideinteger -strict [lindex $window 0]]} then {
+      error "window handle is not a valid wide integer"
+    }
+  }
+
+  list [llength $windows] [expr {[llength $windows] > 0}]
+} -cleanup {
+  unset -nocomplain window windows
+} -constraints {eagle windows compile.WINDOWS compile.NATIVE} -match regexp \
+-result {^\d+ True$}}
+
+###############################################################################
+
+runTest {test infoWindows-1.2 {info windows (matching)} -body {
+  expr {[llength [info windows *Eagle*]] > 0}
+} -constraints \
+{eagle windows interactive hostIsOpen compile.WINDOWS compile.NATIVE} -result \
+{True}}
+
+###############################################################################
+
+proc getNopCommandName {} {
+  if {[isEagle]} then {
+    return [appendArgs [getTestAssemblyName] _Nop]
+  } else {
+    return Eagle_Nop; # NOTE: Not really used.
+  }
+}
+
+###############################################################################
+
+runTest {test infoCommands-1.1 {info commands (only)} -setup {
+  set savedDefaultInterpreterFlags [object invoke -flags +NonPublic \
+      Interpreter.GetActive DefaultInterpreterFlags]
+
+  object invoke -flags +NonPublic Interpreter.GetActive \
+      DefaultInterpreterFlags [combineFlags $savedDefaultInterpreterFlags \
+      -AddTclMathMask]
+
+  set i [interp create]
+} -body {
+  interp eval $i {lsort [info commands -noprocedures -noaliases -core]}
+} -cleanup {
+  catch {interp delete $i}
+  unset -nocomplain i
+
+  catch {
+    object invoke -flags +NonPublic Interpreter.GetActive \
+        DefaultInterpreterFlags $savedDefaultInterpreterFlags
+  }
+  unset -nocomplain savedDefaultInterpreterFlags
+} -constraints {eagle} -match regexp -result [string map \
+[list Eagle_Nop [getNopCommandName]] {^(Eagle_Nop )?after append apply\
+array base64 bgerror break (callback )?catch cd clock close concat continue\
+debug do downlevel encoding eof error eval exec exit expr fblocked fconfigure\
+fcopy file flush for foreach format (getf )?gets glob global guid hash host if\
+incr info interp invoke join kill lappend lassign lget (library )?lindex\
+linsert list llength lmap load lrange lremove lrepeat lreplace lreverse lsearch\
+lset lsort namespace nop (object )?open package parse pid proc puts pwd read\
+regexp regsub rename return scope seek set (setf )?(socket )?source split (sql\
+)?string subst switch (tcl )?tell test1 test2 throw time truncate try unload\
+unset (unsetf )?update uplevel upvar uri variable version vwait while( xml)?$}]}
+
+###############################################################################
+
+runTest {test infoCommands-1.2 {info commands (safe)} -setup {
+  set savedDefaultInterpreterFlags [object invoke -flags +NonPublic \
+      Interpreter.GetActive DefaultInterpreterFlags]
+
+  object invoke -flags +NonPublic Interpreter.GetActive \
+      DefaultInterpreterFlags [combineFlags $savedDefaultInterpreterFlags \
+      -AddTclMathMask]
+
+  set i [interp create -safe]
+} -body {
+  interp eval $i {lsort [info commands -noprocedures -core]}
+} -cleanup {
+  catch {interp delete $i}
+  unset -nocomplain i
+
+  catch {
+    object invoke -flags +NonPublic Interpreter.GetActive \
+        DefaultInterpreterFlags $savedDefaultInterpreterFlags
+  }
+  unset -nocomplain savedDefaultInterpreterFlags
+} -constraints {eagle} -match regexp -result [string map \
+[list Eagle_Nop [getNopCommandName]] {^(Eagle_Nop )?after append apply\
+array base64 bgerror break (callback )?catch clock close concat continue do\
+downlevel encoding eof error eval exit expr fblocked fconfigure fcopy flush for\
+foreach format gets global guid hash if incr invoke join lappend lassign lget\
+lindex linsert list llength lmap lrange lremove lrepeat lreplace lreverse\
+lsearch lset lsort namespace nop parse proc puts read regexp regsub rename\
+return scope seek set split string subst switch tell test1 test2 throw time\
+truncate try unset update uplevel upvar variable vwait while$}]}
+
+###############################################################################
+
+runTest {test infoCommands-1.3 {info commands (-hidden)} -setup {
+  set savedDefaultInterpreterFlags [object invoke -flags +NonPublic \
+      Interpreter.GetActive DefaultInterpreterFlags]
+
+  object invoke -flags +NonPublic Interpreter.GetActive \
+      DefaultInterpreterFlags [combineFlags $savedDefaultInterpreterFlags \
+      -AddTclMathMask]
+
+  set i [interp create]
+} -body {
+  interp eval $i {lsort [info commands -noprocedures -noaliases -core -hidden]}
+} -cleanup {
+  catch {interp delete $i}
+  unset -nocomplain i
+
+  catch {
+    object invoke -flags +NonPublic Interpreter.GetActive \
+        DefaultInterpreterFlags $savedDefaultInterpreterFlags
+  }
+  unset -nocomplain savedDefaultInterpreterFlags
+} -constraints {eagle} -match regexp -result [string map \
+[list Eagle_Nop [getNopCommandName]] {^(Eagle_Nop )?after append apply\
+array base64 bgerror break (callback )?catch cd clock close concat continue\
+debug do downlevel encoding eof error eval exec exit expr fblocked fconfigure\
+fcopy file flush for foreach format (getf )?gets glob global guid hash host if\
+incr info interp invoke join kill lappend lassign lget (library )?lindex\
+linsert list llength lmap load lrange lremove lrepeat lreplace lreverse lsearch\
+lset lsort namespace nop (object )?open package parse pid proc puts pwd read\
+regexp regsub rename return scope seek set (setf )?(socket )?source split (sql\
+)?string subst switch (tcl )?tell test1 test2 throw time truncate try unload\
+unset (unsetf )?update uplevel upvar uri variable version vwait while( xml)?$}]}
+
+###############################################################################
+
+runTest {test infoCommands-1.4 {info commands (safe / -hidden)} -setup {
+  set savedDefaultInterpreterFlags [object invoke -flags +NonPublic \
+      Interpreter.GetActive DefaultInterpreterFlags]
+
+  object invoke -flags +NonPublic Interpreter.GetActive \
+      DefaultInterpreterFlags [combineFlags $savedDefaultInterpreterFlags \
+      -AddTclMathMask]
+
+  set i [interp create -safe]
+} -body {
+  interp eval $i {lsort [info commands -noprocedures -core -hidden]}
+} -cleanup {
+  catch {interp delete $i}
+  unset -nocomplain i
+
+  catch {
+    object invoke -flags +NonPublic Interpreter.GetActive \
+        DefaultInterpreterFlags $savedDefaultInterpreterFlags
+  }
+  unset -nocomplain savedDefaultInterpreterFlags
+} -constraints {eagle} -match regexp -result [string map \
+[list Eagle_Nop [getNopCommandName]] {^(Eagle_Nop )?after append apply\
+array base64 bgerror break (callback )?catch clock close concat continue do\
+downlevel encoding eof error eval exit expr fblocked fconfigure fcopy flush for\
+foreach format gets global guid hash if incr invoke join lappend lassign lget\
+lindex linsert list llength lmap lrange lremove lrepeat lreplace lreverse\
+lsearch lset lsort namespace nop parse proc puts read regexp regsub rename\
+return scope seek set split string subst switch tell test1 test2 throw time\
+truncate try unset update uplevel upvar variable vwait while$}]}
+
+###############################################################################
+
+runTest {test infoCommands-1.5 {info commands (hide / -hidden)} -setup {
+  set savedDefaultInterpreterFlags [object invoke -flags +NonPublic \
+      Interpreter.GetActive DefaultInterpreterFlags]
+
+  object invoke -flags +NonPublic Interpreter.GetActive \
+      DefaultInterpreterFlags [combineFlags $savedDefaultInterpreterFlags \
+      -AddTclMathMask]
+
+  set i [interp create]
+} -body {
+  interp hide $i object
+
+  list [interp eval $i {lsort [info commands -noprocedures -core]}] \
+      [interp eval $i {lsort [info commands -noprocedures -core -hidden]}]
+} -cleanup {
+  catch {interp delete $i}
+  unset -nocomplain i
+
+  catch {
+    object invoke -flags +NonPublic Interpreter.GetActive \
+        DefaultInterpreterFlags $savedDefaultInterpreterFlags
+  }
+  unset -nocomplain savedDefaultInterpreterFlags
+} -constraints {eagle command.object} -match regexp -result [string map \
+[list Eagle_Nop [getNopCommandName]] {^\{(Eagle_Nop )?after append apply\
+array base64 bgerror break (callback )?catch cd clock close concat continue\
+debug do downlevel encoding eof error eval exec exit expr fblocked fconfigure\
+fcopy file flush for foreach format (getf )?gets glob global guid hash host if\
+incr info interp invoke join kill lappend lassign lget (library )?lindex\
+linsert list llength lmap load lrange lremove lrepeat lreplace lreverse lsearch\
+lset lsort namespace nop open package parse pid proc puts pwd read regexp\
+regsub rename return scope seek set (setf )?(socket )?source split (sql\
+)?string subst switch (tcl )?tell test1 test2 throw time truncate try unload\
+unset (unsetf )?update uplevel upvar uri variable version vwait while( xml)?\}\
+\{(Eagle_Nop )?after append apply array base64 bgerror break (callback )?catch\
+cd clock close concat continue debug do downlevel encoding eof error eval exec\
+exit expr fblocked fconfigure fcopy file flush for foreach format (getf )?gets\
+glob global guid hash host if incr info interp invoke join kill lappend lassign\
+lget (library )?lindex linsert list llength lmap load lrange lremove lrepeat\
+lreplace lreverse lsearch lset lsort namespace nop object open package parse\
+pid proc puts pwd read regexp regsub rename return scope seek set (setf\
+)?(socket )?source split (sql )?string subst switch (tcl )?tell test1 test2\
+throw time truncate try unload unset (unsetf )?update uplevel upvar uri\
+variable version vwait while( xml)?\}$}]}
+
+###############################################################################
+
+rename getNopCommandName ""
+
+###############################################################################
+
+runTest {test infoCmdType-1.1 {info cmdtype, TIP #426} -setup {
+  unset -nocomplain x
+} -body {
+  set x [object create -alias Int32]
+  interp alias {} foo {} set
+
+  list [info cmdtype set] [info cmdtype info] [info cmdtype isEagle] \
+      [info cmdtype foo] [info cmdtype $x]
+} -cleanup {
+  catch {interp alias {} foo {}}
+  unset -nocomplain x
+} -constraints {eagle command.object tip426} -result \
+{native ensemble proc alias object}}
+
+###############################################################################
+
+runTest {test info-1.1 {ambiguous info sub-commands (unsafe)} -setup {
+  set i [interp create]
+} -body {
+  interp eval $i {info con}
+} -cleanup {
+  catch {interp delete $i}
+
+  unset -nocomplain i
+} -constraints {eagle} -returnCodes 1 -result {ambiguous option "con": must be\
+connections or context}}
+
+###############################################################################
+
+runTest {test info-1.2 {ambiguous info sub-commands (safe)} -setup {
+  set i [interp create -safe]
+} -body {
+  interp eval $i {info con}
+} -cleanup {
+  catch {interp delete $i}
+
+  unset -nocomplain i
+} -constraints {eagle} -match regexp -result {^\d+$}}
+
+###############################################################################
+
+runTest {test infoLink-1.1 {info linkedname (TIP #471)} -setup {
+  set i [interp create]
+} -body {
+  interp eval $i {
+    upvar 0 tcl_platform array1
+    upvar 0 array1 array2
+
+    upvar 0 tcl_platform(platform) element1
+    upvar 0 element1 element2
+
+    upvar 0 tcl_library scalar1
+    upvar 0 scalar1 scalar2
+
+    namespace eval ::one {variable two 1}
+    upvar 0 ::one::two nsVar1
+    upvar 0 nsVar1 nsVar2
+
+    set code(1) [catch {info linkedname a} result(1)]
+
+    set code(2) [catch {info linkedname tcl_platform} result(2)]
+    set code(3) [catch {info linkedname tcl_platform(platform)} result(3)]
+    set code(4) [catch {info linkedname tcl_library} result(4)]
+    set code(5) [catch {info linkedname ::one::two} result(5)]
+
+    set code(6) [catch {info linkedname array1} result(6)]
+    set code(7) [catch {info linkedname array2} result(7)]
+
+    set code(8) [catch {info linkedname element1} result(8)]
+    set code(9) [catch {info linkedname element2} result(9)]
+
+    set code(10) [catch {info linkedname scalar1} result(10)]
+    set code(11) [catch {info linkedname scalar2} result(11)]
+
+    set code(12) [catch {info linkedname nsVar1} result(12)]
+    set code(13) [catch {info linkedname nsVar2} result(13)]
+
+    list $code(1) $code(2) $code(3) $code(4) $code(5) $code(6) $result(6) \
+        $code(7) $result(7) $code(8) $result(8) $code(9) $result(9) \
+        $code(10) $result(10) $code(11) $result(11) $code(12) $result(12) \
+        $code(13) $result(13)
+  }
+} -cleanup {
+  catch {interp delete $i}
+
+  unset -nocomplain i
+} -constraints {tip471} -result {1 1 1 1 1 0 ::tcl_platform 0 ::array1 0\
+::tcl_platform(platform) 0 ::element1 0 ::tcl_library 0 ::scalar1 0 ::one::two\
+0 ::nsVar1}}
+
+###############################################################################
+
+source [file join [file normalize [file dirname [info script]]] epilogue.eagle]

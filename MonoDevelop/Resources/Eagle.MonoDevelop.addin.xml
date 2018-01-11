@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ *
+ * Eagle.MonoDevelop.addin.xml -
+ *
+ * Copyright (c) 2007-2012 by Joe Mistachkin.  All rights reserved.
+ *
+ * See the file "license.terms" for information on usage and redistribution of
+ * this file, and for a DISCLAIMER OF ALL WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ *
+-->
+<Addin id="Eagle"
+       namespace="MonoDevelop"
+       name="Eagle Handlers for MonoDevelop"
+       author="Joe Mistachkin"
+       copyright="Copyright © 2007-2012 by Joe Mistachkin.  All rights reserved."
+       url="https://eagle.to/"
+       description="Integrates Eagle into the MonoDevelop IDE."
+       category="Scripting"
+       version="1.0">
+
+  <Dependencies>
+    <Addin id="Core" version="2.6" />
+    <Addin id="Ide" version="2.6" />
+  </Dependencies>
+
+  <Runtime>
+    <Import assembly="Eagle.dll" />
+  </Runtime>
+
+  <Extension path="/MonoDevelop/Ide/Commands">
+    <Category _name="Eagle Integration" id="Eagle Integration">
+      <Command id="Eagle._Handlers.Commands.EvaluateExpression"
+               _label="Evaluate Eagle Expression"
+               _description="Evaluates an Eagle expression"
+               defaultHandler="Eagle._Handlers.EvaluateExpression" />
+
+      <Command id="Eagle._Handlers.Commands.EvaluateScript"
+               _label="Evaluate Eagle Script"
+               _description="Evaluates an Eagle script"
+               defaultHandler="Eagle._Handlers.EvaluateScript" />
+
+      <Command id="Eagle._Handlers.Commands.EvaluateFile"
+               _label="Evaluate Eagle File"
+               _description="Evaluates an Eagle file"
+               defaultHandler="Eagle._Handlers.EvaluateFile" />
+
+      <Command id="Eagle._Handlers.Commands.SubstituteString"
+               _label="Substitute Eagle String"
+               _description="Performs all Eagle substitutions within a string"
+               defaultHandler="Eagle._Handlers.SubstituteString" />
+
+      <Command id="Eagle._Handlers.Commands.SubstituteFile"
+               _label="Substitute Eagle File"
+               _description="Performs all Eagle substitutions within a file"
+               defaultHandler="Eagle._Handlers.SubstituteFile" />
+    </Category>
+  </Extension>
+
+  <Extension path="/MonoDevelop/Ide/MainMenu/Edit">
+    <CommandItem id="Eagle._Handlers.Commands.EvaluateExpression" />
+    <CommandItem id="Eagle._Handlers.Commands.EvaluateScript" />
+    <CommandItem id="Eagle._Handlers.Commands.EvaluateFile" />
+    <CommandItem id="Eagle._Handlers.Commands.SubstituteString" />
+    <CommandItem id="Eagle._Handlers.Commands.SubstituteFile" />
+  </Extension>
+</Addin>

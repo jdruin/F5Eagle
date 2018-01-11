@@ -1,0 +1,6 @@
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\Sample2017\Debug\Sample2017.csproj.CoreCompileInputs.cache
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\bin\Debug\bin\Sample.exe
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\bin\Debug\bin\Sample.pdb
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\Sample2017\Debug\Sample2017.csprojResolveAssemblyReference.cache
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\Sample2017\Debug\Sample.exe
+C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\Sample2017\Debug\Sample.pdb

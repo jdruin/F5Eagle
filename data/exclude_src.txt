@@ -1,0 +1,13 @@
+*\BinaryEditor.exe
+*\BinaryEditor.exe.config
+*\fossil.exe
+*\innounp.exe
+*\JustWait.exe
+*\Library\Tools\src\*
+*\MsgGen.exe
+*\SetErrorLevel.exe
+*\SetIcon.exe
+*\UnRAR.exe
+*\unzip.exe
+*\vswhere.exe
+*\zip.exe

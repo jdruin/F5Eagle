@@ -1,0 +1,929 @@
+###############################################################################
+#
+# versionTag.eagle --
+#
+# Extensible Adaptable Generalized Logic Engine (Eagle)
+# Version Tag Tool
+#
+# Copyright (c) 2007-2012 by Joe Mistachkin.  All rights reserved.
+#
+# See the file "license.terms" for information on usage and redistribution of
+# this file, and for a DISCLAIMER OF ALL WARRANTIES.
+#
+# RCS: @(#) $Id: $
+#
+###############################################################################
+
+package require Eagle
+
+proc usage { error } {
+  if {[string length $error] > 0} then {puts stdout $error}
+
+  puts stdout "usage:\
+[file tail [info nameofexecutable]]\
+[file tail [info script]]\
+<ChangeLogMode | UpdateMode | PatchLevelMode | SourceIdMode |\
+NuSpecMode | AssemblyDateTimeMode | AssemblyReleaseMode |\
+AssemblyTagMode | AssemblyTextMode | AssemblyUriMode |\
+AssemblyStrongNameTagMode> <fileName> \[notes\]"
+
+  #
+  # NOTE: Indicate to the caller, if any, that we have failed.
+  #
+  exit 1
+}
+
+proc getBuildPatchLevel {} {
+  #
+  # NOTE: Check if the engine patch level has been explicitly overridden
+  #       via the environment.
+  #
+  if {[info exists ::env(PATCHLEVEL)]} then {
+    #
+    # NOTE: The engine patch level has been explicitly overridden via the
+    #       environment; therefore, use it.
+    #
+    return $::env(PATCHLEVEL)
+  } else {
+    #
+    # NOTE: If the default build configuration has been disabled, we cannot
+    #       rely on the engine patch level being accurate (i.e. because this
+    #       may be the LKG build, which would produce the "wrong" engine
+    #       patch level for the new build).
+    #
+    if {[info exists ::env(NONETFX20)]} then {
+      #
+      # NOTE: The default build appears to be disabled; however, the engine
+      #       patch level has not been set in the environment.  Therefore,
+      #       calculate the engine patch level based on the current date and
+      #       time.
+      #
+      return [appendArgs [info engine Version] . [join [clock build] .]]
+    } else {
+      #
+      # NOTE: The default build appears to be enabled; therefore, use the
+      #       normal method for querying the engine patch level.
+      #
+      return [info engine PatchLevel]
+    }
+  }
+}
+
+proc getAssemblyDateTime {} {
+  #
+  # NOTE: Check if the assembly date/time has been explicitly overridden
+  #       via the environment.
+  #
+  if {[info exists ::env(ASSEMBLY_DATETIME)]} then {
+    #
+    # NOTE: The assembly date/time has been explicitly overridden via the
+    #       environment; therefore, use it.
+    #
+    return $::env(ASSEMBLY_DATETIME)
+  } else {
+    #
+    # NOTE: If the default build configuration has been disabled, we cannot
+    #       rely on the assembly date/time being accurate (i.e. because this
+    #       may be the LKG build, which would produce the "wrong" assembly
+    #       date/time for the new build).
+    #
+    if {[info exists ::env(NONETFX20)]} then {
+      #
+      # NOTE: The default build appears to be disabled; however, the assembly
+      #       date/time has not been set in the environment.  Therefore,
+      #       calculate the assembly date/time based on the current date and
+      #       time.
+      #
+      return [clock format [clock seconds] -gmt true -iso -isotimezone]
+    } else {
+      #
+      # NOTE: The default build appears to be enabled; therefore, use the
+      #       normal method for querying the assembly date/time.
+      #
+      return [info engine TimeStamp]
+    }
+  }
+}
+
+proc isSupportedProtocol { protocolId } {
+  return [expr {
+    $protocolId eq "1" || $protocolId eq "2" || $protocolId eq "3"
+  }]
+}
+
+set modes [list \"ChangeLogMode\", \"UpdateMode\", \
+                \"PatchLevelMode\", \"SourceIdMode\", \
+                \"NuSpecMode\", \"AssemblyReleaseMode\", \
+                \"AssemblyTagMode\", \"AssemblyTextMode\", \
+                or \"AssemblyUriMode\"]
+
+set argc [llength $argv]
+
+if {$argc == 2 || $argc == 3} then {
+  #
+  # NOTE: Are we updating the "ChangeLog", "stable.txt", or
+  #       "PatchLevel.cs" file?
+  #
+  set mode [lindex $argv 0]
+
+  if {[string length $mode] > 0} then {
+    #
+    # NOTE: Get the file name to read/update/write.
+    #
+    set fileName [lindex $argv 1]
+
+    #
+    # NOTE: Get the notes (currently for UpdateMode only), if any.
+    #
+    if {$argc == 3} then {
+      set notes [escapeUpdateNotes [lindex $argv 2]]
+    }
+
+    #
+    # NOTE: Make sure the file name provided is not obviously
+    #       invalid.
+    #
+    if {[string length $fileName] > 0} then {
+      #
+      # NOTE: Read all the data out of the text file.
+      #
+      set data [readFile $fileName]
+
+      #
+      # NOTE: Normalize to Unix line-endings.
+      #
+      set data [string map [list \r\n \n] $data]; # Unix.
+
+      #
+      # NOTE: Figure out what mode we are in.
+      #
+      switch -exact -nocase -- $mode {
+        ChangeLogMode {
+          #
+          # NOTE: A bunch of literal asterisk characters.
+          #
+          set stars {\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*}
+
+          #
+          # NOTE: Match against this pattern in the "ChangeLog"
+          #       file (this pattern must be fairly strict to prevent
+          #       false-positives).
+          #
+          set pattern "($stars ).*?( (?:RELEASE|WORKING) $stars)"
+
+          #
+          # NOTE: The release tag (e.g. Alpha, Beta, Final).
+          #
+          set tag [string totitle [info engine Tag]]
+
+          #
+          # NOTE: The full patch level (e.g. 1.0.3320.36054).
+          #
+          set patchLevel [split [getBuildPatchLevel] .]
+
+          #
+          # NOTE: Reformat the patch level so that it has a consistent
+          #       width (e.g. W.X.YYYY.ZZZZZ).
+          #
+          set patchLevel [object invoke String Format "{0}.{1}.{2:D4}.{3:D5}" \
+            [set w [object invoke -create Int32 Parse [lindex $patchLevel 0]]] \
+            [set x [object invoke -create Int32 Parse [lindex $patchLevel 1]]] \
+            [set y [object invoke -create Int32 Parse [lindex $patchLevel 2]]] \
+            [set z [object invoke -create Int32 Parse [lindex $patchLevel 3]]]]
+
+          #
+          # NOTE: Tidy up the temporary Int32 objects now.
+          #
+          unset w x y z; # dispose
+
+          #
+          # NOTE: Build the final replacement specification string.
+          #
+          set subSpec [appendArgs \\1 $tag " " $patchLevel \\2]
+
+          #
+          # NOTE: Perform the replacement in the original data
+          #       (first match only).
+          #
+          if {[regsub -nocase -- $pattern $data $subSpec data]} then {
+            #
+            # NOTE: Show how we tagged it.
+            #
+            puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                " " $tag " " $patchLevel]
+
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [string map [list \n \r\n] $data]; # DOS.
+          } else {
+            #
+            # NOTE: We could not replace the string.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "pattern \"" $pattern "\" not found in \"" \
+                $fileName \"]
+          }
+        }
+        UpdateMode {
+          #
+          # NOTE: Split the data into lines.
+          #
+          set inLines [split $data \n]; # Unix.
+
+          #
+          # NOTE: Start with an empty list of output lines.
+          #
+          set outLines [list]
+
+          #
+          # NOTE: Keep track of how many lines are modified.
+          #
+          set count 0
+
+          #
+          # NOTE: Check each line to find the build information...
+          #
+          foreach line $inLines {
+            #
+            # NOTE: Remove surrounding whitespace from the original line.
+            #
+            set newLine [string trim $line]
+
+            #
+            # NOTE: Skip blank lines.
+            #
+            if {[string length $newLine] > 0} then {
+              #
+              # NOTE: Skip comment lines.
+              #
+              if {[string index $newLine 0] ne "#" && \
+                  [string index $newLine 0] ne ";"} then {
+                #
+                # NOTE: Split the tab-delimited line into fields.  The
+                #       format of the lines must be as follows:
+                #
+                # <startLine> protocolId <tab> publicKeyToken <tab> name
+                # <tab> culture <tab> patchLevel <tab> timeStamp <tab>
+                # baseUri <tab> md5Hash <tab> sha1Hash <tab> sha512Hash
+                # <tab> notes <newLine>
+                #
+                set fields [split $newLine \t]
+
+                #
+                # NOTE: Grab the protocol Id field.
+                #
+                set protocolId [lindex $fields 0]
+
+                #
+                # NOTE: Grab the public key token field.
+                #
+                set publicKeyToken [lindex $fields 1]
+
+                #
+                # NOTE: Grab the name field.
+                #
+                set name [lindex $fields 2]
+
+                #
+                # NOTE: Grab the culture field.
+                #
+                set culture [lindex $fields 3]
+
+                #
+                # NOTE: Grab the patch level field.
+                #
+                set patchLevel [lindex $fields 4]
+
+                #
+                # NOTE: If no notes were specified, just carry over the notes
+                #       from the previous release.
+                #
+                if {![info exists notes]} then {
+                  set notes [lindex $fields 10]; # NOTE: Already escaped.
+                }
+
+                #
+                # NOTE: We only want to find the first line that matches
+                #       our engine.  The public key token is being used
+                #       here to make sure we get the same "flavor" of the
+                #       engine.  The lines are organized so that the "latest
+                #       stable version" is on the first line (for a given
+                #       public key token), followed by development builds,
+                #       experimental builds, etc.  If a line uses a regular
+                #       expression for the patch level, it will be skipped.
+                #
+                if {[isSupportedProtocol $protocolId] && \
+                    [matchEnginePublicKeyToken $publicKeyToken] && \
+                    [matchEngineName $name] && \
+                    [matchEngineCulture $culture] && \
+                    [string is version -strict $patchLevel]} then {
+                  #
+                  # NOTE: Read the entire assembly file into memory.
+                  #
+                  set assemblyData [readFile [lindex [info assembly] end]]
+
+                  #
+                  # NOTE: Build the line to insert into the version tag
+                  #       file.
+                  #
+                  if {$protocolId eq "1"} then {
+                    #
+                    # NOTE: This is an update build line.  All the fields
+                    #       will get new values, including the three hashes
+                    #       that we calculated of the assembly file data we
+                    #       just read above.  The new line will still be
+                    #       delimited by tab characters.
+                    #
+                    set newLine [join [list $protocolId \
+                        [info engine PublicKeyToken] \
+                        [info engine Name] \
+                        [info engine Culture] \
+                        [getBuildPatchLevel] \
+                        [info engine TimeStamp] \
+                        [info engine DownloadBaseUri] \
+                        [string tolower [hash normal md5 $assemblyData]] \
+                        [string tolower [hash normal sha1 $assemblyData]] \
+                        [string tolower [hash normal sha512 $assemblyData]] \
+                        $notes] \t]
+                  } else {
+                    #
+                    # NOTE: This is an update script line -OR- an updater
+                    #       self-update line.  In both these cases, make
+                    #       sure to retain the original timestamp, base
+                    #       URI, MD5, SHA1, SHA512, and notes fields from
+                    #       the source line.  The new line will still be
+                    #       delimited by tab characters.
+                    #
+                    set newLine [join [list $protocolId \
+                        [info engine PublicKeyToken] \
+                        [info engine Name] \
+                        [info engine Culture] \
+                        [getBuildPatchLevel] \
+                        [lindex $fields 5] \
+                        [lindex $fields 6] \
+                        [lindex $fields 7] \
+                        [lindex $fields 8] \
+                        [lindex $fields 9] \
+                        [lindex $fields 10]] \t]
+                  }
+
+                  #
+                  # NOTE: Print out the line we are going to end up putting
+                  #       in the file.
+                  #
+                  puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                      " " $newLine]
+
+                  #
+                  # NOTE: Append the modified line to the list of lines to
+                  #       eventually write to the output file.
+                  #
+                  lappend outLines $newLine
+
+                  #
+                  # NOTE: We have now processed another matching line, keep
+                  #       track of it.
+                  #
+                  incr count
+
+                  #
+                  # NOTE: This line has been processed successfully; skip
+                  #       to the next line.
+                  #
+                  continue
+                }
+              }
+            }
+
+            #
+            # NOTE: Add the original line verbatim, including any whitespace.
+            #
+            lappend outLines $line
+          }
+
+          #
+          # NOTE: Check to make sure that we actually changed something.
+          #
+          if {$count > 0} then {
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [join $outLines \n]; # Unix.
+          } else {
+            #
+            # NOTE: We could not replace the string.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "line with protocol Id \"1\", public key " \
+                "token \"" [info engine PublicKeyToken] "\", name \"" \
+                [info engine Name] "\", and culture \"" [info engine Culture] \
+                "\" not found in \"" $fileName \"]
+          }
+        }
+        PatchLevelMode {
+          #
+          # NOTE: Match against this pattern in the "PatchLevel.cs"
+          #       file (this pattern must be fairly strict to prevent
+          #       false-positives).
+          #
+          set pattern {AssemblyVersion\(.*?\)}
+
+          #
+          # NOTE: The full patch level (e.g. 1.0.3320.36054).
+          #
+          set patchLevel [getBuildPatchLevel]
+
+          #
+          # NOTE: Build the final replacement specification string.
+          #
+          set subSpec [appendArgs AssemblyVersion( \
+              \" $patchLevel \" )]
+
+          #
+          # NOTE: Perform the replacement in the original data
+          #       (first match only).
+          #
+          if {[regsub -nocase -- $pattern $data $subSpec data]} then {
+            #
+            # NOTE: Show how we tagged it.
+            #
+            puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                " " $patchLevel]
+
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [string map [list \n \r\n] $data]; # DOS.
+          } else {
+            #
+            # NOTE: We could not replace the string.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "pattern \"" $pattern "\" not found in \"" \
+                $fileName \"]
+          }
+        }
+        SourceIdMode {
+          #
+          # NOTE: Query the source identifier from Fossil, if available.
+          #       If we are not within an active checkout, this will fail.
+          #
+          set pattern {^checkout:\s+([^\s]+)\s+(.*)\s+$}
+
+          if {[catch {set exec [exec -success Success -directory \
+                  [file dirname $fileName] -- fossil info]}] || \
+              [regexp -line -- $pattern $exec dummy id timeStamp] == 0} then {
+            #
+            # NOTE: We could not query the source identifier(s); therefore,
+            #       use obviously invalid ones.  We would also be able to
+            #       use null values here except that these values end up in
+            #       native C header files as well (i.e. not just managed
+            #       assembly attribute values).
+            #
+            set id 0000000000000000000000000000000000000000
+            set timeStamp "0000-00-00 00:00:00 UTC"
+          }
+
+          #
+          # NOTE: Match against these patterns in the "PatchLevel.cs"
+          #       file (these patterns must be fairly strict to prevent
+          #       false-positives).
+          #
+          set pattern1 {AssemblySourceId\(.*?\)}
+          set pattern2 {AssemblySourceTimeStamp\(.*?\)}
+          set pattern3 {SOURCE_ID\t\t".*?"}
+          set pattern4 {SOURCE_TIMESTAMP\t".*?"}
+
+          #
+          # NOTE: Build the final replacement specification strings.
+          #
+          set subSpec1 [appendArgs AssemblySourceId(\" $id \" )]
+          set subSpec2 [appendArgs AssemblySourceTimeStamp(\" $timeStamp \" )]
+          set subSpec3 [appendArgs SOURCE_ID\t\t \" $id \"]
+          set subSpec4 [appendArgs SOURCE_TIMESTAMP\t \" $timeStamp \"]
+
+          #
+          # NOTE: Perform the replacements in the original data
+          #       (first match only).
+          #
+          set count 0
+
+          incr count [regsub -nocase -- $pattern1 $data $subSpec1 data]
+          incr count [regsub -nocase -- $pattern2 $data $subSpec2 data]
+          incr count [regsub -nocase -- $pattern3 $data $subSpec3 data]
+          incr count [regsub -nocase -- $pattern4 $data $subSpec4 data]
+
+          #
+          # NOTE: If we actually replaced anything, we need to write back
+          #       to the original file; otherwise, leave it alone.
+          #
+          if {$count > 0} then {
+            #
+            # NOTE: Show how we tagged it.
+            #
+            puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                " " $id " " $timeStamp]
+
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [string map [list \n \r\n] $data]; # DOS.
+          } else {
+            #
+            # NOTE: We could not replace the strings.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "patterns \"" $pattern1 "\", \"" \
+                $pattern2 "\", \"" $pattern3 "\", and \"" $pattern4 \
+                "\" not found in \"" $fileName \"]
+          }
+        }
+        NuSpecMode {
+          #
+          # NOTE: Match against these patterns in the "*.nuspec"
+          #       files (these patterns must be fairly strict to prevent
+          #       false-positives).
+          #
+          set pattern1 {<version>.*?</version>}
+          set pattern2 {" version=".*?" />}
+
+          #
+          # NOTE: The full patch level (e.g. 1.0.3320.36054).
+          #
+          set patchLevel [getBuildPatchLevel]
+
+          #
+          # NOTE: Build the final replacement specification strings.
+          #
+          set subSpec1 [appendArgs <version> $patchLevel </version>]
+          set subSpec2 [appendArgs "\" version=\"" $patchLevel "\" />"]
+
+          #
+          # NOTE: Perform the replacements in the original data.  The
+          #       first replacement only looks for one match; however,
+          #       the second looks for all matches.
+          #
+          set count 0
+
+          incr count [regsub -nocase -- $pattern1 $data $subSpec1 data]
+          incr count [regsub -nocase -all -- $pattern2 $data $subSpec2 data]
+
+          if {$count > 0} then {
+            #
+            # NOTE: Show how we tagged it.
+            #
+            puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                " " $patchLevel]
+
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [string map [list \n \r\n] $data]; # DOS.
+          } else {
+            #
+            # NOTE: We could not replace the strings.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "patterns \"" $pattern1 "\" and \"" \
+                $pattern2 "\" not found in \"" $fileName \"]
+          }
+        }
+        AssemblyDateTimeMode {
+          #
+          # NOTE: Match against this pattern in the "PatchLevel.cs"
+          #       file (this pattern must be fairly strict to prevent
+          #       false-positives).
+          #
+          set pattern {AssemblyDateTime\(.*?\)}
+
+          #
+          # NOTE: Full date/time (e.g. 2016.09.03T02:51:02.000 +0000).
+          #
+          set dateTime [getAssemblyDateTime]
+
+          #
+          # NOTE: Build the final replacement specification string.
+          #
+          set subSpec [appendArgs AssemblyDateTime( \
+              \" $dateTime \" )]
+
+          #
+          # NOTE: Perform the replacement in the original data
+          #       (first match only).
+          #
+          if {[regsub -nocase -- $pattern $data $subSpec data]} then {
+            #
+            # NOTE: Show how we tagged it.
+            #
+            puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                " " $dateTime]
+
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [string map [list \n \r\n] $data]; # DOS.
+          } else {
+            #
+            # NOTE: We could not replace the string.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "pattern \"" $pattern "\" not found in \"" \
+                $fileName \"]
+          }
+        }
+        AssemblyReleaseMode {
+          #
+          # NOTE: Attempt to query some text from the stdin channel.
+          #
+          if {[catch {set text [gets stdin]}]} then {
+            #
+            # NOTE: We could not query the text; therefore, use a
+            #       null string.
+            #
+            set text null
+          } else {
+            #
+            # NOTE: Trim the text, escape any embedded double quotes,
+            #       and then wrap the whole thing in double quotes.
+            #
+            set text [appendArgs \" [string map [list \" \\\\\"] \
+                [string trim $text]] \"]
+          }
+
+          #
+          # NOTE: Match against this pattern in the "PatchLevel.cs"
+          #       file (this pattern must be fairly strict to prevent
+          #       false-positives).
+          #
+          set pattern {AssemblyRelease\((?:".*?"|null)\)}
+
+          #
+          # NOTE: Build the final replacement specification string.
+          #
+          set subSpec [appendArgs AssemblyRelease( $text )]
+
+          #
+          # NOTE: Perform the replacement in the original data
+          #       (first match only).
+          #
+          if {[regsub -nocase -- $pattern $data $subSpec data]} then {
+            #
+            # NOTE: Show how we tagged it.
+            #
+            puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                " " $text]
+
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [string map [list \n \r\n] $data]; # DOS.
+          } else {
+            #
+            # NOTE: We could not replace the string.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "pattern \"" $pattern "\" not found in \"" \
+                $fileName \"]
+          }
+        }
+        AssemblyStrongNameTagMode {
+          #
+          # NOTE: Attempt to query some text from the stdin channel.
+          #
+          if {[catch {set text [gets stdin]}]} then {
+            #
+            # NOTE: We could not query the text; therefore, use a
+            #       null string.
+            #
+            set text null
+          } else {
+            #
+            # NOTE: Trim the text, escape any embedded double quotes,
+            #       and then wrap the whole thing in double quotes.
+            #
+            set text [appendArgs \" [string map [list \" \\\\\"] \
+                [string trim $text]] \"]
+          }
+
+          #
+          # NOTE: Match against this pattern in the "PatchLevel.cs"
+          #       file (this pattern must be fairly strict to prevent
+          #       false-positives).
+          #
+          set pattern {AssemblyStrongNameTag\((?:".*?"|null)\)}
+
+          #
+          # NOTE: Build the final replacement specification string.
+          #
+          set subSpec [appendArgs AssemblyStrongNameTag( $text )]
+
+          #
+          # NOTE: Perform the replacement in the original data
+          #       (first match only).
+          #
+          if {[regsub -nocase -- $pattern $data $subSpec data]} then {
+            #
+            # NOTE: Show how we tagged it.
+            #
+            puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                " " $text]
+
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [string map [list \n \r\n] $data]; # DOS.
+          } else {
+            #
+            # NOTE: We could not replace the string.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "pattern \"" $pattern "\" not found in \"" \
+                $fileName \"]
+          }
+        }
+        AssemblyTagMode {
+          #
+          # NOTE: Attempt to query some text from the stdin channel.
+          #
+          if {[catch {set text [gets stdin]}]} then {
+            #
+            # NOTE: We could not query the text; therefore, use a
+            #       null string.
+            #
+            set text null
+          } else {
+            #
+            # NOTE: Trim the text, escape any embedded double quotes,
+            #       and then wrap the whole thing in double quotes.
+            #
+            set text [appendArgs \" [string map [list \" \\\\\"] \
+                [string trim $text]] \"]
+          }
+
+          #
+          # NOTE: Match against this pattern in the "PatchLevel.cs"
+          #       file (this pattern must be fairly strict to prevent
+          #       false-positives).
+          #
+          set pattern {AssemblyTag\((?:".*?"|null)\)}
+
+          #
+          # NOTE: Build the final replacement specification string.
+          #
+          set subSpec [appendArgs AssemblyTag( $text )]
+
+          #
+          # NOTE: Perform the replacement in the original data
+          #       (first match only).
+          #
+          if {[regsub -nocase -- $pattern $data $subSpec data]} then {
+            #
+            # NOTE: Show how we tagged it.
+            #
+            puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                " " $text]
+
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [string map [list \n \r\n] $data]; # DOS.
+          } else {
+            #
+            # NOTE: We could not replace the string.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "pattern \"" $pattern "\" not found in \"" \
+                $fileName \"]
+          }
+        }
+        AssemblyTextMode {
+          #
+          # NOTE: Attempt to query some text from the stdin channel.
+          #
+          if {[catch {set text [gets stdin]}]} then {
+            #
+            # NOTE: We could not query the text; therefore, use a
+            #       null string.
+            #
+            set text null
+          } else {
+            #
+            # NOTE: Trim the text, escape any embedded double quotes,
+            #       and then wrap the whole thing in double quotes.
+            #
+            set text [appendArgs \" [string map [list \" \\\\\"] \
+                [string trim $text]] \"]
+          }
+
+          #
+          # NOTE: Match against this pattern in the "PatchLevel.cs"
+          #       file (this pattern must be fairly strict to prevent
+          #       false-positives).
+          #
+          set pattern {AssemblyText\((?:".*?"|null)\)}
+
+          #
+          # NOTE: Build the final replacement specification string.
+          #
+          set subSpec [appendArgs AssemblyText( $text )]
+
+          #
+          # NOTE: Perform the replacement in the original data
+          #       (first match only).
+          #
+          if {[regsub -nocase -- $pattern $data $subSpec data]} then {
+            #
+            # NOTE: Show how we tagged it.
+            #
+            puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                " " $text]
+
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [string map [list \n \r\n] $data]; # DOS.
+          } else {
+            #
+            # NOTE: We could not replace the string.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "pattern \"" $pattern "\" not found in \"" \
+                $fileName \"]
+          }
+        }
+        AssemblyUriMode {
+          #
+          # NOTE: Attempt to query some text from the stdin channel.
+          #
+          if {[catch {set text [gets stdin]}]} then {
+            #
+            # NOTE: We could not query the text; therefore, use a
+            #       null string.
+            #
+            set text null
+          } else {
+            #
+            # NOTE: Make sure the string is a valid URI.
+            #
+            if {![uri isvalid $text]} then {
+              usage "invalid URI"
+            }
+
+            #
+            # NOTE: Trim the text, escape any embedded double quotes,
+            #       and then wrap the whole thing in double quotes.
+            #
+            set text [appendArgs \" [string map [list \" \\\\\"] \
+                [string trim $text]] \"]
+          }
+
+          #
+          # NOTE: Match against this pattern in the "PatchLevel.cs"
+          #       file (this pattern must be fairly strict to prevent
+          #       false-positives).
+          #
+          set pattern {AssemblyUri\((?:".*?"|null)\)}
+
+          #
+          # NOTE: Build the final replacement specification string.
+          #
+          set subSpec [appendArgs AssemblyUri( $text )]
+
+          #
+          # NOTE: Perform the replacement in the original data
+          #       (first match only).
+          #
+          if {[regsub -nocase -- $pattern $data $subSpec data]} then {
+            #
+            # NOTE: Show how we tagged it.
+            #
+            puts stdout [appendArgs "tagged \"" $fileName "\" " $mode \
+                " " $text]
+
+            #
+            # NOTE: Re-write the original file with the modified data.
+            #
+            writeFile $fileName [string map [list \n \r\n] $data]; # DOS.
+          } else {
+            #
+            # NOTE: We could not replace the string.  This is considered
+            #       an overall failure.
+            #
+            usage [appendArgs "pattern \"" $pattern "\" not found in \"" \
+                $fileName \"]
+          }
+        }
+        default {
+          usage [appendArgs "unknown mode, must be " [join $modes " "]]
+        }
+      }
+    } else {
+      usage "invalid file name"
+    }
+  } else {
+    usage [appendArgs "invalid mode, must be " [join $modes " "]]
+  }
+} else {
+  usage ""
+}
