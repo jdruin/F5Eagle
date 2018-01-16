@@ -650,6 +650,7 @@
     <Compile Include="Operators\Divide.cs" />
     <Compile Include="Operators\Equal.cs" />
     <Compile Include="Operators\Exponent.cs" />
+    <Compile Include="Operators\F5Equals.cs" />
     <Compile Include="Operators\GreaterThan.cs" />
     <Compile Include="Operators\GreaterThanOrEqualTo.cs" />
     <Compile Include="Operators\LeftRotate.cs" />

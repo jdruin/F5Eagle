@@ -4,3 +4,9 @@ C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\EagleShell2017\De
 C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\EagleShell2017\Debug\EagleShell.exe
 C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\EagleShell2017\Debug\EagleShell.pdb
 C:\Users\jdrui\Documents\Visual Studio 2017\Projects\Eagle\obj\EagleShell2017\Debug\EagleShell2017.csprojResolveAssemblyReference.cache
+C:\Users\jdrui\Documents\F5\F5Eagle\bin\Debug\bin\EagleShell.exe
+C:\Users\jdrui\Documents\F5\F5Eagle\bin\Debug\bin\EagleShell.pdb
+C:\Users\jdrui\Documents\F5\F5Eagle\obj\EagleShell2017\Debug\EagleShell2017.csprojResolveAssemblyReference.cache
+C:\Users\jdrui\Documents\F5\F5Eagle\obj\EagleShell2017\Debug\EagleShell2017.csproj.CoreCompileInputs.cache
+C:\Users\jdrui\Documents\F5\F5Eagle\obj\EagleShell2017\Debug\EagleShell.exe
+C:\Users\jdrui\Documents\F5\F5Eagle\obj\EagleShell2017\Debug\EagleShell.pdb

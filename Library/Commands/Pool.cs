@@ -26,7 +26,7 @@ namespace Eagle._Commands
             {
                 if (arguments != null)
                 {
-                    result = arguments[0];
+                    result = arguments[1];
                 }
                 else
                 {

@@ -1732,6 +1732,7 @@ namespace Eagle._Components.Public
                    (lexeme == Lexeme.StringNotEqual) ||
                    (lexeme == Lexeme.StrStartsWith) ||
                    (lexeme == Lexeme.StrEndsWith) ||
+                   (lexeme == Lexeme.F5Equals) ||
                    (lexeme == Lexeme.StringContains))
             {
                 operatorIndex = exprState.Start;
@@ -1748,12 +1749,8 @@ namespace Eagle._Components.Public
                     operatorLength = Operators.StrStartsWith.Length;
                 else if (lexeme == Lexeme.StringContains)
                     operatorLength = Operators.StringContains.Length;
-                else if (lexeme == Lexeme.F5LogicalAnd)
-                    operatorLength = Operators.F5LogicalAnd.Length;
-                else if (lexeme == Lexeme.F5LogicalNot)
-                    operatorLength = Operators.F5LogicalNot.Length;
-                else if (lexeme == Lexeme.F5LogicalOr)
-                    operatorLength = Operators.F5LogicalOr.Length;
+                else if (lexeme == Lexeme.F5Equals)
+                    operatorLength = Operators.F5Equals.Length;
                 else if (lexeme == Lexeme.F5MatchesRegex)
                     operatorLength = Operators.F5MatchesRegex.Length;
                 else
@@ -3276,6 +3273,16 @@ namespace Eagle._Components.Public
                                 exprState.Lexeme = Lexeme.StringEqual;
                                 exprState.Length = 2;
                                 exprState.Next = index + 2;
+
+                                parseState.Terminator = exprState.Next;
+
+                                return ReturnCode.Ok;
+                            }
+                            else
+                            {
+                                exprState.Lexeme = Lexeme.F5Equals;
+                                exprState.Length = 6;
+                                exprState.Next = index + 6;
 
                                 parseState.Terminator = exprState.Next;
 

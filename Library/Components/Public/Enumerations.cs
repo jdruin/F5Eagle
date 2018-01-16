@@ -8029,6 +8029,7 @@ namespace Eagle._Components.Public
         F5LogicalOr,
         F5LogicalNot,
         F5MatchesRegex,
+        F5Equals,
 
         /*
          * Binary list operators:
