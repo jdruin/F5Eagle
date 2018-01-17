@@ -7670,6 +7670,7 @@ namespace Eagle._Components.Public
         {
             GlobalState.PushActiveInterpreter(interpreter);
 
+
             try
             {
                 if (@operator != null)
@@ -7794,6 +7795,11 @@ namespace Eagle._Components.Public
             )
         {
             ReturnCode code = ReturnCode.Ok;
+
+            System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace();
+
+            System.Diagnostics.Debug.WriteLine(stackTrace.GetFrame(1).GetMethod().Name);
+            
 
             if (!EntityOps.IsDisabled(@operator))
             {

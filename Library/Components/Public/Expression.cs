@@ -565,6 +565,11 @@ namespace Eagle._Components.Public
                 case Operators.ListIn:
                 case Operators.ListNotIn:
                 case Operators.StrStartsWith:
+                case Operators.F5Equals:
+                case Operators.F5LogicalAnd:
+                case Operators.F5LogicalNot:
+                case Operators.F5LogicalOr:
+                case Operators.F5MatchesRegex:
                     {
                         return true;
                     }
@@ -893,12 +898,84 @@ namespace Eagle._Components.Public
             sourceStart = exprState.Start;
             firstIndex = parseState.Tokens.Count;
 
-            code = ParseLogicalXor(interpreter, exprState, noReady, ref error);
+            code = ParseF5LogicalOr(interpreter, exprState, noReady, ref error);
 
             if (code != ReturnCode.Ok)
                 return code;
 
             while (exprState.Lexeme == Lexeme.LogicalOr)
+            {
+                operatorIndex = exprState.Start;
+
+                code = GetLexeme(interpreter, exprState, noReady, ref error);
+
+                if (code != ReturnCode.Ok)
+                    return code;
+
+                code = ParseF5LogicalOr(interpreter, exprState, noReady, ref error);
+
+                if (code != ReturnCode.Ok)
+                    return code;
+
+                InsertSubExpressionTokens(
+                    interpreter, Lexeme.LogicalOr, operatorIndex,
+                    Operators.LogicalOr.Length, parseState.Text, sourceStart,
+                    (exprState.PreviousEnd - sourceStart), firstIndex,
+                    exprState);
+            }
+
+            return ReturnCode.Ok;
+        }
+
+        private static ReturnCode ParseF5LogicalOr(
+            Interpreter interpreter,
+            IExpressionState exprState,
+            bool noReady,
+            ref Result error
+            )
+        {
+            ReturnCode code;
+
+            if (noReady || (interpreter == null))
+                code = ReturnCode.Ok;
+            else
+                code = Ready(interpreter, exprState, ref error);
+
+            if (code != ReturnCode.Ok)
+            {
+                if (exprState != null)
+                    exprState.NotReady = true;
+
+                return code;
+            }
+
+            if (exprState == null)
+            {
+                error = "invalid expression state";
+                return ReturnCode.Error;
+            }
+
+            IParseState parseState = exprState.ParseState;
+
+            if (parseState == null)
+            {
+                error = "invalid parse state";
+                return ReturnCode.Error;
+            }
+
+            int firstIndex;
+            int sourceStart;
+            int operatorIndex;
+
+            sourceStart = exprState.Start;
+            firstIndex = parseState.Tokens.Count;
+
+            code = ParseLogicalXor(interpreter, exprState, noReady, ref error);
+
+            if (code != ReturnCode.Ok)
+                return code;
+
+            while (exprState.Lexeme == Lexeme.F5LogicalOr)
             {
                 operatorIndex = exprState.Start;
 
@@ -913,8 +990,8 @@ namespace Eagle._Components.Public
                     return code;
 
                 InsertSubExpressionTokens(
-                    interpreter, Lexeme.LogicalOr, operatorIndex,
-                    Operators.LogicalOr.Length, parseState.Text, sourceStart,
+                    interpreter, Lexeme.F5LogicalOr, operatorIndex,
+                    Operators.F5LogicalOr.Length, parseState.Text, sourceStart,
                     (exprState.PreviousEnd - sourceStart), firstIndex,
                     exprState);
             }
@@ -1041,12 +1118,84 @@ namespace Eagle._Components.Public
             sourceStart = exprState.Start;
             firstIndex = parseState.Tokens.Count;
 
-            code = ParseLogicalImp(interpreter, exprState, noReady, ref error);
+            code = ParseF5LogicalAnd(interpreter, exprState, noReady, ref error);
 
             if (code != ReturnCode.Ok)
                 return code;
 
             while (exprState.Lexeme == Lexeme.LogicalAnd)
+            {
+                operatorIndex = exprState.Start;
+
+                code = GetLexeme(interpreter, exprState, noReady, ref error);
+
+                if (code != ReturnCode.Ok)
+                    return code;
+
+                code = ParseF5LogicalAnd(interpreter, exprState, noReady, ref error);
+
+                if (code != ReturnCode.Ok)
+                    return code;
+
+                InsertSubExpressionTokens(
+                    interpreter, Lexeme.LogicalAnd, operatorIndex,
+                    Operators.LogicalAnd.Length, parseState.Text, sourceStart,
+                    (exprState.PreviousEnd - sourceStart), firstIndex,
+                    exprState);
+            }
+
+            return ReturnCode.Ok;
+        }
+
+        private static ReturnCode ParseF5LogicalAnd(
+            Interpreter interpreter,
+            IExpressionState exprState,
+            bool noReady,
+            ref Result error
+            )
+        {
+            ReturnCode code;
+
+            if (noReady || (interpreter == null))
+                code = ReturnCode.Ok;
+            else
+                code = Ready(interpreter, exprState, ref error);
+
+            if (code != ReturnCode.Ok)
+            {
+                if (exprState != null)
+                    exprState.NotReady = true;
+
+                return code;
+            }
+
+            if (exprState == null)
+            {
+                error = "invalid expression state";
+                return ReturnCode.Error;
+            }
+
+            IParseState parseState = exprState.ParseState;
+
+            if (parseState == null)
+            {
+                error = "invalid parse state";
+                return ReturnCode.Error;
+            }
+
+            int firstIndex;
+            int sourceStart;
+            int operatorIndex;
+
+            sourceStart = exprState.Start;
+            firstIndex = parseState.Tokens.Count;
+
+            code = ParseLogicalImp(interpreter, exprState, noReady, ref error);
+
+            if (code != ReturnCode.Ok)
+                return code;
+
+            while (exprState.Lexeme == Lexeme.F5LogicalAnd)
             {
                 operatorIndex = exprState.Start;
 
@@ -1061,8 +1210,8 @@ namespace Eagle._Components.Public
                     return code;
 
                 InsertSubExpressionTokens(
-                    interpreter, Lexeme.LogicalAnd, operatorIndex,
-                    Operators.LogicalAnd.Length, parseState.Text, sourceStart,
+                    interpreter, Lexeme.F5LogicalAnd, operatorIndex,
+                    Operators.F5LogicalAnd.Length, parseState.Text, sourceStart,
                     (exprState.PreviousEnd - sourceStart), firstIndex,
                     exprState);
             }
@@ -2269,7 +2418,8 @@ namespace Eagle._Components.Public
             if ((lexeme == Lexeme.Plus) ||
                 (lexeme == Lexeme.Minus) ||
                 (lexeme == Lexeme.BitwiseNot) ||
-                (lexeme == Lexeme.LogicalNot))
+                (lexeme == Lexeme.LogicalNot) ||
+                (lexeme == Lexeme.F5LogicalNot))
             {
                 operatorIndex = exprState.Start;
 
@@ -2279,6 +2429,8 @@ namespace Eagle._Components.Public
                     operatorLength = Operators.Minus.Length;
                 else if (lexeme == Lexeme.BitwiseNot)
                     operatorLength = Operators.BitwiseNot.Length;
+                else if (lexeme == Lexeme.F5LogicalNot)
+                    operatorLength = Operators.F5LogicalNot.Length;
                 else
                     operatorLength = Operators.LogicalNot.Length;
 
@@ -3227,6 +3379,32 @@ namespace Eagle._Components.Public
 
                         return ReturnCode.Ok;
                     }
+                case Characters.a:
+                    {
+                        if (((exprState.Last - index) > 1) &&
+                            (parseState.Text[index + 1] == Characters.n) &&
+                            (parseState.Text[index + 2] == Characters.d))
+                        {
+                            exprState.Lexeme = Lexeme.F5LogicalAnd;
+                            exprState.Length = 3;
+                            exprState.Next = index + 3;
+                            parseState.Terminator = exprState.Next;
+
+                            return ReturnCode.Ok;
+                        }
+
+
+#if MONO_BUILD
+                        //
+                        // HACK: Part of workaround for a bug in the Mono 2.10 C#
+                        //       compiler.
+                        //       https://bugzilla.novell.com/show_bug.cgi?id=671488
+                        //
+                        goto default;
+#else
+                        goto checkFuncName;
+#endif
+                    }
                 case Characters.c:
                     {
                         if (((exprState.Last - index) > 1) &&
@@ -3491,6 +3669,19 @@ namespace Eagle._Components.Public
                                 return ReturnCode.Ok;
                             }
                         }
+                        else if (((exprState.Last - index) > 1) &&
+                            (parseState.Text[index + 1] == Characters.o) &&
+                            (parseState.Text[index + 2] == Characters.t))
+                        {
+                            exprState.Lexeme = Lexeme.F5LogicalNot;
+                            exprState.Length = 3;
+                            exprState.Next = index + 3;
+
+                            parseState.Terminator = exprState.Next;
+
+                            return ReturnCode.Ok;
+                        }
+
 
 #if MONO_BUILD
                         //
@@ -3503,7 +3694,31 @@ namespace Eagle._Components.Public
                         goto checkFuncName;
 #endif
                     }
+                case Characters.o:
+                    {
+                        if (((exprState.Last - index) > 1) &&
+                            (parseState.Text[index + 1] == Characters.r))
+                        {
+                            exprState.Lexeme = Lexeme.F5LogicalOr;
+                            exprState.Length = 2;
+                            exprState.Next = index + 2;
+                            parseState.Terminator = exprState.Next;
 
+                            return ReturnCode.Ok;
+                        }
+
+
+#if MONO_BUILD
+                        //
+                        // HACK: Part of workaround for a bug in the Mono 2.10 C#
+                        //       compiler.
+                        //       https://bugzilla.novell.com/show_bug.cgi?id=671488
+                        //
+                        goto default;
+#else
+                        goto checkFuncName;
+#endif
+                    }
                 case Characters.s:
                     {
                         if (((exprState.Last - index) > 1) &&
@@ -3793,6 +4008,7 @@ namespace Eagle._Components.Public
                         break;
                     }
                 case Lexeme.LogicalOr:
+                case Lexeme.F5LogicalOr:
                     {
                         result = inValue;
 
@@ -4451,6 +4667,7 @@ namespace Eagle._Components.Public
                                     }
                                 case Lexeme.LogicalAnd: // short circuit (if operand1 is FALSE)
                                 case Lexeme.LogicalOr:  // short circuit (if operand1 is TRUE)
+                                case Lexeme.F5LogicalOr: // short circuit (if operand1 is TRUE)
                                 case Lexeme.LogicalImp: // short circuit (if operand1 is FALSE)
                                     {
                                         index = tokenIndex + 2;

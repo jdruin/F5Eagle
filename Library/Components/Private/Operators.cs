@@ -59,7 +59,7 @@ namespace Eagle._Components.Private
         public const string F5LogicalAnd = "and";
         public const string F5LogicalOr = "or";
         public const string F5LogicalNot = "not";
-        public const string F5MatchesRegex = "mathces_regex";
+        public const string F5MatchesRegex = "matches_regex";
         public const string F5Equals = "equals";
     }
 }

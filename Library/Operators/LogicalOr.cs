@@ -49,6 +49,8 @@ namespace Eagle._Operators
         {
             ReturnCode code = ReturnCode.Ok;
 
+            
+
             if (interpreter != null)
             {
                 if (arguments != null)
