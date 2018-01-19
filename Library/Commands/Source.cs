@@ -154,7 +154,8 @@ namespace Eagle._Commands
 
                         try
                         {
-#endif
+#endif                      
+                            
                             code = interpreter.EvaluateFile(
                                 encoding, arguments[argumentIndex],
                                 ref result);

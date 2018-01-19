@@ -88,3 +88,6 @@ package ifneeded Eagle.Unzip 1.0 \
 
 package ifneeded Eagle.Update 1.0 \
     [list sourceWithInfo [file join $dir update.eagle]]
+
+package ifneeded F5.Http 1.0 \
+    [list sourceWithInfo [file join $dir f5Http.eagle]]

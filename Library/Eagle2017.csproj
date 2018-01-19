@@ -145,6 +145,7 @@
     <Compile Include="Commands\Llength.cs" />
     <Compile Include="Commands\Lmap.cs" />
     <Compile Include="Commands\Load.cs" />
+    <Compile Include="Commands\Log.cs" />
     <Compile Include="Commands\Lrange.cs" />
     <Compile Include="Commands\Lremove.cs" />
     <Compile Include="Commands\Lrepeat.cs" />
@@ -194,6 +195,7 @@
     <Compile Include="Commands\Variable.cs" />
     <Compile Include="Commands\Version.cs" />
     <Compile Include="Commands\Vwait.cs" />
+    <Compile Include="Commands\When.cs" />
     <Compile Include="Commands\While.cs" />
     <Compile Include="Comparers\Ascii.cs" />
     <Compile Include="Comparers\Command.cs" />
