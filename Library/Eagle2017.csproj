@@ -13,6 +13,9 @@
     <EagleProjectName>Eagle Library</EagleProjectName>
     <BaseAddress>1627389952</BaseAddress>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
   <Import Project="$(EagleDir)\Targets\Eagle.Builds.targets" />
   <Import Project="$(EagleDir)\Targets\Eagle.Settings.targets" />
   <PropertyGroup Condition="'$(EagleOnlyNetFx20)' != 'false'">
@@ -28,6 +31,7 @@
     <Optimize>false</Optimize>
     <DefineConstants>EAGLE;TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
+    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DebugType>pdbonly</DebugType>
