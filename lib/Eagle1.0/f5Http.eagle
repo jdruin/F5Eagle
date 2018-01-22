@@ -15,9 +15,9 @@
 
 package require log
 
-package require base64
+#package require base64
 
-namespace eval ::F5::HTTP {
+namespace eval ::HTTP {
   variable sent
   variable headers
   variable lws
@@ -25,6 +25,8 @@ namespace eval ::F5::HTTP {
   variable status_code
   variable version
   variable payload
+  variable host
+  
 
   #namespace export class - deprecated from BIG-IP 11.4.0
   #namespace export close - Closes the HTTP connection - should be used with "on" or "endstate"
@@ -83,7 +85,7 @@ namespace eval ::F5::HTTP {
 # HTTP::cookie httponly <name> [enable|disable]
 # HTTP::cookie sanitize <-attributes|-names>
 #
-proc ::F5::HTTP::cookie {args} {
+proc ::HTTP::cookie {args} {
   log::log debug "HTTP::cookie $args invoked"
 
   set cmdargs [concat HTTP::cookie $args]
@@ -118,7 +120,7 @@ proc ::F5::HTTP::cookie {args} {
 # unimplemented command:
 # HTTP::header insert_modssl_fields <addr port | addr addr addr | port port port>
 #
-proc ::testcl::HTTP::header {cmd args} {
+proc ::HTTP::header {cmd args} {
   log::log debug "HTTP::header $cmd $args invoked"
 
   set cmdargs [concat HTTP::header $cmd $args]
@@ -334,33 +336,10 @@ proc ::testcl::HTTP::header {cmd args} {
 # Usage syntax:
 # HTTP::host
 #
-proc ::testcl::HTTP::host {args} {
-  log::log debug "HTTP::host $args invoked"
-
-  set cmdargs [concat HTTP::host $args]
-  #set rc [catch { return [testcl::expected {*}$cmdargs] } res]
-  set rc [catch { return [eval testcl::expected $cmdargs] } res]
-  if {$rc != 1500} {
-    log::log debug "skipping HTTP::host method evaluation - expectation found for $cmdargs"
-    if {$rc < 1000} {
-      return $res
-    }
-    return -code $rc $res
-  }
-
-  if { [llength $args] > 0 } {
-    error "incorrect number of arguments for HTTP::host : [llength $args]"
-  }
-
-  log::log debug "reading host from HTTP header"
-  variable headers
-  if { ![array exists headers] } {
-    array set headers {}
-  }
-  if { ![info exists headers(host)] } {
-    return {}
-  }
-  return [lindex $headers(host) end]
+proc ::HTTP::host {} {
+  variable HTTP::host
+      
+  return $HTTP::host
 }
 
 # Usage syntax:
@@ -413,7 +392,7 @@ proc ::testcl::HTTP::is_keepalive {args} {
 # Usage syntax:
 # HTTP::is_redirect
 #
-proc ::testcl::HTTP::is_redirect {args} {
+proc ::HTTP::is_redirect {args} {
   log::log debug "HTTP::is_redirect $args invoked"
 
   set cmdargs [concat HTTP::is_redirect $args]
@@ -456,7 +435,7 @@ proc ::testcl::HTTP::is_redirect {args} {
 # Usage syntax:
 # HTTP::method
 #
-proc ::testcl::HTTP::method {args} {
+proc ::HTTP::method {args} {
   log::log debug "HTTP::method $args invoked"
 
   set cmdargs [concat HTTP::method $args]
@@ -480,7 +459,7 @@ proc ::testcl::HTTP::method {args} {
 # Usage syntax:
 # HTTP::password
 #
-proc ::testcl::HTTP::password {args} {
+proc ::HTTP::password {args} {
   log::log debug "HTTP::password $args invoked"
 
   set cmdargs [concat HTTP::password $args]
@@ -530,7 +509,7 @@ proc ::testcl::HTTP::password {args} {
 # Usage syntax:
 # HTTP::path [<string>]
 #
-proc ::testcl::HTTP::path {args} {
+proc ::HTTP::path {args} {
   log::log debug "HTTP::path $args invoked"
 
   set cmdargs [concat HTTP::path $args]
@@ -582,7 +561,7 @@ proc ::testcl::HTTP::path {args} {
 # HTTP::payload rechunk
 # HTTP::payload unchunk
 #
-proc ::testcl::HTTP::payload {args} {
+proc ::HTTP::payload {args} {
   log::log debug "HTTP::payload $args invoked"
 
   set cmdargs [concat HTTP::payload $args]
@@ -665,7 +644,7 @@ proc ::testcl::HTTP::payload {args} {
 # Usage syntax:
 # HTTP::query
 #
-proc ::testcl::HTTP::query {args} {
+proc ::HTTP::query {args} {
   log::log debug "HTTP::query $args invoked"
 
   set cmdargs [concat HTTP::query $args]
@@ -702,7 +681,7 @@ proc ::testcl::HTTP::query {args} {
 # Usage syntax:
 # HTTP::redirect <url>
 #
-proc ::testcl::HTTP::redirect {args} {
+proc ::HTTP::redirect {args} {
   log::log debug "HTTP::redirect $args invoked"
 
   log::log debug "verify if response is already sent"
@@ -750,7 +729,7 @@ proc ::testcl::HTTP::redirect {args} {
 # Usage syntax:
 # HTTP::request
 #
-proc ::testcl::HTTP::request {args} {
+proc ::HTTP::request {args} {
   log::log debug "HTTP::request $args invoked"
 
   set cmdargs [concat HTTP::request $args]
@@ -785,7 +764,7 @@ proc ::testcl::HTTP::request {args} {
 # Usage syntax:
 # HTTP::respond <status code> [-version [1.0|1.1]] [content <content Value>] [noserver] [<Header name> <Header Value>]+
 #
-proc ::testcl::HTTP::respond {args} {
+proc ::HTTP::respond {args} {
   log::log debug "HTTP::respond $args invoked"
 
   variable sent
@@ -908,7 +887,7 @@ proc ::testcl::HTTP::respond {args} {
 # Usage syntax:
 # HTTP::status
 #
-proc ::testcl::HTTP::status {args} {
+proc ::HTTP::status {args} {
   log::log debug "HTTP::status $args invoked"
 
   set cmdargs [concat HTTP::status $args]
@@ -934,45 +913,20 @@ proc ::testcl::HTTP::status {args} {
 }
 
 # Usage syntax:
-# HTTP::uri [<string>]
+# HTTP::uri 
 #
-proc ::testcl::HTTP::uri {args} {
-  log::log debug "HTTP::uri $args invoked"
-
-  set cmdargs [concat HTTP::uri $args]
-  #set rc [catch { return [testcl::expected {*}$cmdargs] } res]
-  set rc [catch { return [eval testcl::expected $cmdargs] } res]
-  if {$rc != 1500} {
-    log::log debug "skipping HTTP::uri method evaluation - expectation found for $cmdargs"
-    if {$rc < 1000} {
-      return $res
-    }
-    return -code $rc $res
-  }
+proc ::HTTP::uri {} {
+    
+  variable HTTP::uri
   
-  variable uri
-  if { ![info exists uri] } {
-    set uri /
-  }
-
-  if { [llength $args] == 0 } {
-    log::log debug "return HTTP::uri $uri"
-    return $uri
-  }
-  if { [llength $args] == 1 } {
-    set uri [lindex $args 0]
-    log::log debug "HTTP::uri set: $uri"
-  } else {
-    error "incorrect number of arguments for HTTP::uri : [llength $args]"
-  }
-  return {}
+    return $HTTP::uri
 }
 
 
 # Usage syntax:
 # HTTP::username
 #
-proc ::testcl::HTTP::username {args} {
+proc ::HTTP::username {args} {
   log::log debug "HTTP::username $args invoked"
 
   set cmdargs [concat HTTP::username $args]
@@ -1022,7 +976,7 @@ proc ::testcl::HTTP::username {args} {
 # Usage syntax:
 # HTTP::version ["0.9" | "1.0" | "1.1"]
 #
-proc ::testcl::HTTP::version {args} {
+proc ::HTTP::version {args} {
   log::log debug "HTTP::version $args invoked"
 
   set cmdargs [concat HTTP::version $args]
