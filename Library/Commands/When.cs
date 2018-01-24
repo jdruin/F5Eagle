@@ -122,8 +122,17 @@ namespace Eagle._Commands
 
                         try
                         {
+                            if (arguments[1].ToString() == "HTTP_REQUEST")
+                            {
+                                code = interpreter.EvaluateScript(arguments[arguments.Count - 1], ref result);
+                            }
+                            else
+                            {
+                                code = ReturnCode.Ok;
+                            
+                            }
 #endif
-                            code = interpreter.EvaluateScript(arguments[arguments.Count - 1],ref result);
+                            
 
 #if DEBUGGER && BREAKPOINTS
                         }
